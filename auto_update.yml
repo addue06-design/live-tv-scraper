@@ -5,7 +5,6 @@ on:
     - cron: '0 */3 * * *'
   workflow_dispatch:
 
-# 關鍵：在 Workflow 內部直接宣告賦予寫入與發佈權限
 permissions:
   contents: write
   pages: write
@@ -34,7 +33,7 @@ jobs:
         sudo apt-get install -y google-chrome-stable
         pip install undetected-chromedriver
 
-    - name: Run Scraper with Virtual Display
+    - name: Run Scraper with Virtual Display (1080p)
       run: |
         xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" python scraper.py
 
