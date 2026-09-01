@@ -1,91 +1,56 @@
 import json
 import time
 import undetected_chromedriver as uc
+from selenium.webdriver.common.action_chains import ActionChains
 
+# 關鍵：在虛擬顯示器(Xvfb)下，保持 False 即可讓網站以為是真實螢幕
 HEADLESS_MODE = False
 
 
-def bypass_cloudflare_and_play(driver):
-  """繞過 Cloudflare 驗證與自動點擊播放器"""
-  # 1. 嘗試自動點擊 Cloudflare "Verify you are human" 轉跳勾選框 (如果有)
-  try:
-    driver.execute_script("""
-            let cfInput = document.querySelector('input[type="checkbox"]');
-            if (cfInput) cfInput.click();
-            let cfBox = document.querySelector('#challenge-stage, .cf-turnstile');
-            if (cfBox) cfBox.click();
-        """)
-  except Exception:
-    pass
-
-  # 2. 移除阻擋層與廣告遮罩
+def trigger_play_click(driver):
+  """精準觸發播放器與破除遮罩層"""
   try:
     driver.execute_script("""
             let overlays = document.querySelectorAll('div[class*="overlay"], div[class*="pop"], div[style*="z-index"]');
             overlays.forEach(el => {
-                if (el.offsetWidth > 200 && el.offsetHeight > 150) {
-                    el.remove();
+                if (el.offsetWidth > 500 && el.offsetHeight > 300) {
+                    el.click();
                 }
             });
         """)
   except Exception:
     pass
 
-  # 3. 全局點擊與 HTML5 強制播放
   try:
     driver.execute_script("""
-            document.querySelectorAll('video, audio, .dplayer, .jwplayer').forEach(v => {
-                if (v.play) v.play().catch(()=>{});
-                v.click();
+            let playerElements = document.querySelectorAll('video, .dplayer, .jwplayer, div[id*="player"], div[class*="player"]');
+            playerElements.forEach(el => {
+                el.click();
+                let ev = new MouseEvent('click', { clientX: 640, clientY: 360, bubbles: true });
+                el.dispatchEvent(ev);
             });
         """)
   except Exception:
     pass
 
-  # 4. 穿透 iframe
-  iframes = driver.find_elements("tag name", "iframe")
-  for frame in iframes:
-    try:
-      driver.switch_to.frame(frame)
-      driver.execute_script("""
-                document.querySelectorAll('video, audio, div, body').forEach(el => {
-                    if (el.play) el.play().catch(()=>{});
-                    el.click();
-                });
-            """)
-      driver.switch_to.default_content()
-    except Exception:
-      driver.switch_to.default_content()
+  try:
+    actions = ActionChains(driver)
+    actions.move_by_offset(640, 360).click().perform()
+    actions.reset_actions()
+  except Exception:
+    pass
 
 
 def run_full_sports_scraper():
   options = uc.ChromeOptions()
   options.add_argument("--disable-popup-blocking")
-  options.add_argument("--autoplay-policy=no-user-gesture-required")
-  options.add_argument("--no-sandbox")
-  options.add_argument("--disable-dev-shm-usage")
-  options.add_argument("--window-size=1920,1080")
-  options.add_argument("--lang=zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7")
-
   options.set_capability(
       "goog:loggingPrefs", {"performance": "ALL", "browser": "ALL"}
   )
 
   driver = uc.Chrome(options=options, use_subprocess=True)
-
-  # 利用 CDP 網路層偽裝 User-Agent 與 Accept-Language
   driver.execute_cdp_cmd("Network.enable", {})
-  driver.execute_cdp_cmd(
-      "Network.setUserAgentOverride",
-      {
-          "userAgent": (
-              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-              " (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
-          ),
-          "acceptLanguage": "zh-TW,zh;q=0.9,en-US;q=0.8,en;q=0.7",
-          "platform": "Win32",
-      },
-  )
+  driver.set_window_size(1280, 720)
 
   sports_channels = {
       "緯來體育台": "https://livetvmax.com/channels/videoland-sports/",
@@ -99,7 +64,7 @@ def run_full_sports_scraper():
 
   try:
     print("\n" + "=" * 60)
-    print("【體育頻道 - 雲端 iframe 穿透巡航抓取】")
+    print("【體育頻道 - 5頻道全自動巡航抓取】")
     print("=" * 60 + "\n")
 
     for name, url in sports_channels.items():
@@ -107,10 +72,10 @@ def run_full_sports_scraper():
 
       for attempt in range(1, 3):
         driver.get(url)
-        time.sleep(12)  # 增加秒數供 Cloudflare 轉跳
+        time.sleep(9)
 
-        bypass_cloudflare_and_play(driver)
-        time.sleep(8)
+        trigger_play_click(driver)
+        time.sleep(7)
 
         logs = driver.get_log("performance")
         for entry in logs:
@@ -132,10 +97,6 @@ def run_full_sports_scraper():
             print("  ⚠️ 第一次未抓到，正在進行二次嘗試重試...")
           else:
             print("  [❌ 自動失敗] 重試後仍未能觸發播放請求。")
-            try:
-              driver.save_screenshot(f"{name}_error.png")
-            except Exception:
-              pass
 
     print("\n" + "=" * 60)
     if captured_m3u8:
