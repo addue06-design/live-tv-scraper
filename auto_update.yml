@@ -36,7 +36,7 @@ jobs:
 
     - name: Run Scraper with Virtual Display
       run: |
-        xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" python scraper.py
+        xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" python scraper.py
 
     - name: Deploy updated M3U to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
