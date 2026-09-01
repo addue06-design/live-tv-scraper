@@ -23,19 +23,22 @@ jobs:
       with:
         python-version: '3.10'
 
-    - name: Install Chrome and System Dependencies
+    - name: Install Google Chrome and System Dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y wget xvfb libxi6 libgconf-2-4 libnss3 libasound2 libatk-bridge2.0-0 libgtk-3-0
+        # 安裝穩定版 Chrome
         wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo apt-key add -
         echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
         sudo apt-get update
         sudo apt-get install -y google-chrome-stable
-        pip install undetected-chromedriver
+        # 更新並安裝最新版 undetected-chromedriver 以自動匹配 Driver
+        pip install --upgrade pip
+        pip install selenium undetected-chromedriver
 
-    - name: Run Scraper with Virtual Display (1080p)
+    - name: Run Scraper with Virtual Display
       run: |
-        xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" python scraper.py
+        xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" python scraper.py
 
     - name: Deploy updated M3U to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
