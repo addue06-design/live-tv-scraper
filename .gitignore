@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.png
+sports_channels.m3u
+.vscode/
+.idea/
