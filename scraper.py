@@ -8,31 +8,46 @@ HEADLESS_MODE = False
 
 
 def trigger_play_click(driver):
-  """精準觸發播放器與破除遮罩層"""
+def trigger_play_click(driver):
+  """動態計算 DOM 元素中心點並觸發點擊 (相容 Linux Xvfb 與 Windows)"""
+  # 1. 移除全螢幕遮罩層
   try:
     driver.execute_script("""
             let overlays = document.querySelectorAll('div[class*="overlay"], div[class*="pop"], div[style*="z-index"]');
             overlays.forEach(el => {
-                if (el.offsetWidth > 500 && el.offsetHeight > 300) {
-                    el.click();
+                if (el.offsetWidth > 300 && el.offsetHeight > 200) {
+                    el.remove();
                 }
             });
         """)
   except Exception:
     pass
 
+  # 2. 搜尋播放器容器，動態算出它的 Center X, Y 進行點擊
   try:
     driver.execute_script("""
-            let playerElements = document.querySelectorAll('video, .dplayer, .jwplayer, div[id*="player"], div[class*="player"]');
-            playerElements.forEach(el => {
-                el.click();
-                let ev = new MouseEvent('click', { clientX: 640, clientY: 360, bubbles: true });
-                el.dispatchEvent(ev);
-            });
+            let player = document.querySelector('video, .dplayer, .jwplayer, div[id*="player"], div[class*="player"]');
+            if (player) {
+                let rect = player.getBoundingClientRect();
+                let cX = rect.left + rect.width / 2;
+                let cY = rect.top + rect.height / 2;
+                
+                ['mousedown', 'mouseup', 'click'].forEach(evtType => {
+                    let ev = new MouseEvent(evtType, {
+                        clientX: cX,
+                        clientY: cY,
+                        bubbles: true,
+                        cancelable: true,
+                        view: window
+                    });
+                    player.dispatchEvent(ev);
+                });
+            }
         """)
   except Exception:
     pass
 
+  # 3. ActionChains 模擬實體滑鼠移動至視窗中央點擊
   try:
     actions = ActionChains(driver)
     actions.move_by_offset(640, 360).click().perform()
