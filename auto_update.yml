@@ -37,6 +37,14 @@ jobs:
       run: |
         xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" python scraper.py
 
+    # 關鍵：將執行過程中的 PNG 截圖打包，讓你可以直接在 Actions 頁面下載查看
+    - name: Upload Debug Screenshots
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: debug-screenshots
+        path: '*.png'
+
     - name: Deploy updated M3U to GitHub Pages
       uses: peaceiris/actions-gh-pages@v3
       with:
