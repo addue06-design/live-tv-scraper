@@ -2,9 +2,8 @@ name: Auto Fetch Sports M3U8
 
 on:
   schedule:
-    # 每 6 小時自動執行一次 (UTC 時間)
-    - cron: '0 */6 * * *'
-  workflow_dispatch: # 允許在網頁上點擊按鈕手動觸發
+    - cron: '0 */6 * * *'  # 每 6 小時自動執行
+  workflow_dispatch:        # 支援手動觸發
 
 jobs:
   scrape-and-update:
@@ -19,18 +18,9 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install Google Chrome & Xvfb
+      - name: Install Dependencies
         run: |
-          sudo apt-get update
-          sudo apt-get install -y wget xvfb libxi6 libgconf-2-4
-          # 使用新型態 keyring 安裝 Google Chrome 避免 apt exit code 100 錯誤
-          wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/google-archive-keyring.gpg
-          echo "deb [arch=amd64 signed-by=/etc/apt/trusted.gpg.d/google-archive-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" | sudo tee /etc/apt/sources.list.d/google-chrome.list
-          sudo apt-get update
-          sudo apt-get install -y google-chrome-stable
-
-      - name: Install Python Libraries
-        run: |
+          sudo apt-get update && sudo apt-get install -y xvfb
           python -m pip install --upgrade pip
           pip install selenium undetected-chromedriver
 
