@@ -1,49 +1,17 @@
-name: Test Self Hosted Scraper
+name: Test Local Scraper
 
 on:
   workflow_dispatch:
 
 jobs:
-  scrape-and-update:
+  test:
     runs-on: self-hosted
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
 
-      - name: Check Environment
-        shell: cmd
-        run: |
-          echo ==============================================
-          echo SELF-HOSTED WINDOWS RUNNER
-          echo ==============================================
-          echo Computer: %COMPUTERNAME%
-          echo User: %USERNAME%
-          echo.
-          python --version
-          echo.
-
-      - name: Install Dependencies
-        shell: cmd
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install selenium undetected-chromedriver
-
       - name: Run Scraper
         shell: cmd
-        env:
-          PYTHONIOENCODING: utf-8
         run: |
-          python -X utf8 -u scraper.py
-
-      - name: Upload Debug Files
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: scraper-debug
-          path: |
-            debug_*.png
-            debug_*.html
-            sports_channels.m3u
-          if-no-files-found: warn
-          retention-days: 3
+          python scraper.py
