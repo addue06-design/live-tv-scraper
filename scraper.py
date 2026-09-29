@@ -2,10 +2,33 @@ import json
 import os
 import re
 import subprocess
+import sys
 import time
 import undetected_chromedriver as uc
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
+
+
+# ============================================================
+# Windows / GitHub Actions UTF-8 輸出修正
+# ============================================================
+
+if os.name == "nt":
+    try:
+        sys.stdout.reconfigure(
+            encoding="utf-8",
+            errors="replace"
+        )
+    except Exception:
+        pass
+
+    try:
+        sys.stderr.reconfigure(
+            encoding="utf-8",
+            errors="replace"
+        )
+    except Exception:
+        pass
 
 
 def get_chrome_version():
@@ -24,6 +47,7 @@ foreach ($p in $paths) {
         exit 0
     }
 }
+
 exit 1
 """
 
@@ -35,18 +59,21 @@ exit 1
                     "-ExecutionPolicy",
                     "Bypass",
                     "-Command",
-                    powershell_cmd,
+                    powershell_cmd
                 ],
                 capture_output=True,
                 text=True,
                 timeout=10,
-                check=False,
+                check=False
             )
 
             version_str = result.stdout.strip()
 
             if version_str:
-                match = re.search(r"(\d+)\.", version_str)
+                match = re.search(
+                    r"(\d+)\.",
+                    version_str
+                )
 
                 if match:
                     major = int(match.group(1))
@@ -61,11 +88,14 @@ exit 1
 
         else:
             result = subprocess.run(
-                ["google-chrome", "--version"],
+                [
+                    "google-chrome",
+                    "--version"
+                ],
                 capture_output=True,
                 text=True,
                 timeout=10,
-                check=False,
+                check=False
             )
 
             version_str = result.stdout.strip()
@@ -91,27 +121,35 @@ exit 1
         print("⚠️ Chrome 版本偵測逾時")
 
     except Exception as e:
-        print(f"⚠️ Chrome 版本偵測失敗: {e}")
+        print(
+            f"⚠️ Chrome 版本偵測失敗: {e}"
+        )
 
-    print("⚠️ 將由 undetected-chromedriver 自行處理 Chrome 版本")
+    print(
+        "⚠️ 將由 undetected-chromedriver "
+        "自行處理 Chrome 版本"
+    )
+
     return None
 
 
 def get_public_ip():
-    if os.name == "nt":
-        try:
+    try:
+        if os.name == "nt":
             result = subprocess.run(
                 [
                     "powershell.exe",
                     "-NoProfile",
                     "-NonInteractive",
                     "-Command",
-                    "(Invoke-RestMethod -Uri 'https://api.ipify.org' -TimeoutSec 10)"
+                    "(Invoke-RestMethod -Uri "
+                    "'https://api.ipify.org' "
+                    "-TimeoutSec 10)"
                 ],
                 capture_output=True,
                 text=True,
                 timeout=15,
-                check=False,
+                check=False
             )
 
             ip = result.stdout.strip()
@@ -119,11 +157,7 @@ def get_public_ip():
             if ip:
                 return ip
 
-        except Exception:
-            pass
-
-    else:
-        try:
+        else:
             result = subprocess.run(
                 [
                     "curl",
@@ -131,12 +165,12 @@ def get_public_ip():
                     "-s",
                     "--max-time",
                     "10",
-                    "https://api.ipify.org",
+                    "https://api.ipify.org"
                 ],
                 capture_output=True,
                 text=True,
                 timeout=15,
-                check=False,
+                check=False
             )
 
             ip = result.stdout.strip()
@@ -144,8 +178,8 @@ def get_public_ip():
             if ip:
                 return ip
 
-        except Exception:
-            pass
+    except Exception:
+        pass
 
     return None
 
@@ -164,7 +198,9 @@ def print_environment_info(driver):
             )
         )
     except Exception as e:
-        print(f"❌ userAgent 讀取失敗: {e}")
+        print(
+            f"❌ userAgent 讀取失敗: {e}"
+        )
 
     try:
         print("🖥️ navigator.platform:")
@@ -174,7 +210,9 @@ def print_environment_info(driver):
             )
         )
     except Exception as e:
-        print(f"❌ platform 讀取失敗: {e}")
+        print(
+            f"❌ platform 讀取失敗: {e}"
+        )
 
     try:
         print("🌍 navigator.language:")
@@ -184,7 +222,9 @@ def print_environment_info(driver):
             )
         )
     except Exception as e:
-        print(f"❌ language 讀取失敗: {e}")
+        print(
+            f"❌ language 讀取失敗: {e}"
+        )
 
     try:
         print("🌍 navigator.languages:")
@@ -194,7 +234,9 @@ def print_environment_info(driver):
             )
         )
     except Exception as e:
-        print(f"❌ languages 讀取失敗: {e}")
+        print(
+            f"❌ languages 讀取失敗: {e}"
+        )
 
     try:
         print("🔧 navigator.webdriver:")
@@ -204,17 +246,23 @@ def print_environment_info(driver):
             )
         )
     except Exception as e:
-        print(f"❌ webdriver 讀取失敗: {e}")
+        print(
+            f"❌ webdriver 讀取失敗: {e}"
+        )
 
     try:
         print("📐 Window size:")
-        print(driver.get_window_size())
+        print(
+            driver.get_window_size()
+        )
     except Exception as e:
-        print(f"❌ Window size 讀取失敗: {e}")
-
-    public_ip = get_public_ip()
+        print(
+            f"❌ Window size 讀取失敗: {e}"
+        )
 
     print("🌐 Public IPv4:")
+
+    public_ip = get_public_ip()
 
     if public_ip:
         print(public_ip)
@@ -227,8 +275,13 @@ def print_environment_info(driver):
 
 def is_cloudflare_challenge(driver):
     try:
-        title = (driver.title or "").lower()
-        html = (driver.page_source or "")[:15000].lower()
+        title = (
+            driver.title or ""
+        ).lower()
+
+        html = (
+            driver.page_source or ""
+        )[:15000].lower()
 
         if "just a moment" in title:
             return True
@@ -251,20 +304,41 @@ def is_cloudflare_challenge(driver):
     return False
 
 
-def wait_for_cloudflare(driver, max_wait=20):
-    if not is_cloudflare_challenge(driver):
+def wait_for_cloudflare(
+    driver,
+    max_wait=20
+):
+    if not is_cloudflare_challenge(
+        driver
+    ):
         return True
 
-    print("⚠️ 偵測到 Cloudflare Challenge")
+    print(
+        "⚠️ 偵測到 Cloudflare Challenge"
+    )
 
     start_time = time.time()
 
-    while time.time() - start_time < max_wait:
+    while (
+        time.time() - start_time
+        < max_wait
+    ):
         try:
-            if not is_cloudflare_challenge(driver):
-                print("✅ 已離開 Cloudflare Challenge")
-                print(f"📌 Title: {driver.title}")
-                print(f"📌 URL: {driver.current_url}")
+            if not is_cloudflare_challenge(
+                driver
+            ):
+                print(
+                    "✅ 已離開 Cloudflare Challenge"
+                )
+
+                print(
+                    f"📌 Title: {driver.title}"
+                )
+
+                print(
+                    f"📌 URL: {driver.current_url}"
+                )
+
                 return True
 
             elapsed = round(
@@ -273,7 +347,8 @@ def wait_for_cloudflare(driver, max_wait=20):
             )
 
             print(
-                f"⚠️ 目前仍為 Cloudflare Challenge "
+                f"⚠️ 目前仍為 "
+                f"Cloudflare Challenge "
                 f"({elapsed}s)"
             )
 
@@ -289,21 +364,33 @@ def wait_for_cloudflare(driver, max_wait=20):
     return False
 
 
-def save_debug(driver, channel_name):
+def save_debug(
+    driver,
+    channel_name
+):
     safe_name = re.sub(
         r'[\\/:*?"<>| ]+',
         "_",
         channel_name
     )
 
-    png_file = f"debug_{safe_name}.png"
-    html_file = f"debug_{safe_name}.html"
+    png_file = (
+        f"debug_{safe_name}.png"
+    )
+
+    html_file = (
+        f"debug_{safe_name}.html"
+    )
 
     try:
-        driver.save_screenshot(png_file)
+        driver.save_screenshot(
+            png_file
+        )
+
         print(
             f"🖼️ 已保存: {png_file}"
         )
+
     except Exception as e:
         print(
             f"⚠️ screenshot 保存失敗: {e}"
@@ -315,7 +402,9 @@ def save_debug(driver, channel_name):
             "w",
             encoding="utf-8"
         ) as f:
-            f.write(driver.page_source)
+            f.write(
+                driver.page_source
+            )
 
         print(
             f"📄 已保存: {html_file}"
@@ -327,7 +416,9 @@ def save_debug(driver, channel_name):
         )
 
 
-def trigger_player_click(driver):
+def trigger_player_click(
+    driver
+):
     try:
         driver.execute_script("""
             document.querySelectorAll(
@@ -343,6 +434,7 @@ def trigger_player_click(driver):
                 } catch (e) {}
             });
         """)
+
     except Exception:
         pass
 
@@ -360,9 +452,11 @@ def trigger_player_click(driver):
                     }
 
                     p.click();
+
                 } catch (e) {}
             });
         """)
+
     except Exception:
         pass
 
@@ -374,10 +468,13 @@ def trigger_player_click(driver):
 
         for frame in iframes:
             try:
-                driver.switch_to.frame(frame)
+                driver.switch_to.frame(
+                    frame
+                )
 
                 driver.execute_script("""
-                    let v = document.querySelector('video');
+                    let v =
+                        document.querySelector('video');
 
                     if (v) {
                         try {
@@ -386,6 +483,7 @@ def trigger_player_click(driver):
                             }
 
                             v.click();
+
                         } catch (e) {}
                     }
                 """)
@@ -393,7 +491,10 @@ def trigger_player_click(driver):
                 driver.switch_to.default_content()
 
             except Exception:
-                driver.switch_to.default_content()
+                try:
+                    driver.switch_to.default_content()
+                except Exception:
+                    pass
 
     except Exception:
         try:
@@ -407,7 +508,9 @@ def trigger_player_click(driver):
             "body"
         )
 
-        actions = ActionChains(driver)
+        actions = ActionChains(
+            driver
+        )
 
         actions.move_to_element_with_offset(
             body,
@@ -423,13 +526,16 @@ def trigger_player_click(driver):
         pass
 
 
-def get_m3u8_from_logs(driver):
+def get_m3u8_from_logs(
+    driver
+):
     found = []
 
     try:
         logs = driver.get_log(
             "performance"
         )
+
     except Exception:
         return found
 
@@ -470,8 +576,8 @@ def get_m3u8_from_logs(driver):
                 continue
 
             if any(
-                kw in lower_url
-                for kw in [
+                keyword in lower_url
+                for keyword in [
                     "api",
                     "live",
                     "stream",
@@ -479,7 +585,9 @@ def get_m3u8_from_logs(driver):
                 ]
             ):
                 if res_url not in found:
-                    found.append(res_url)
+                    found.append(
+                        res_url
+                    )
 
         except Exception:
             pass
@@ -495,16 +603,22 @@ def capture_channel_m3u8(
 ):
     print()
     print("=" * 60)
+
     print(
-        f"➡️ 前往頻道: {channel_name}"
+        f"➡️ 前往頻道: "
+        f"{channel_name}"
     )
+
     print(
         f"🔗 {page_url}"
     )
+
     print("=" * 60)
 
     try:
-        driver.get(page_url)
+        driver.get(
+            page_url
+        )
 
     except Exception as e:
         print(
@@ -514,11 +628,15 @@ def capture_channel_m3u8(
         time.sleep(2)
 
         try:
-            driver.get(page_url)
+            driver.get(
+                page_url
+            )
+
         except Exception:
             print(
                 "❌ 第二次載入仍失敗"
             )
+
             return None
 
     print(
@@ -527,15 +645,21 @@ def capture_channel_m3u8(
 
     try:
         print(
-            f"📌 初始 Title: {driver.title}"
+            f"📌 初始 Title: "
+            f"{driver.title}"
         )
+
         print(
-            f"📌 初始 URL: {driver.current_url}"
+            f"📌 初始 URL: "
+            f"{driver.current_url}"
         )
+
     except Exception:
         pass
 
-    if is_cloudflare_challenge(driver):
+    if is_cloudflare_challenge(
+        driver
+    ):
         ok = wait_for_cloudflare(
             driver,
             max_wait=20
@@ -559,6 +683,7 @@ def capture_channel_m3u8(
     )
 
     start_time = time.time()
+
     last_click_time = -2.5
 
     while (
@@ -591,7 +716,7 @@ def capture_channel_m3u8(
         ):
             print(
                 f"🖱️ [{round(current_elapsed, 1)}s] "
-                f"觸發播放器互動"
+                "觸發播放器互動"
             )
 
             trigger_player_click(
@@ -602,8 +727,10 @@ def capture_channel_m3u8(
                 current_elapsed
             )
 
-        m3u8_list = get_m3u8_from_logs(
-            driver
+        m3u8_list = (
+            get_m3u8_from_logs(
+                driver
+            )
         )
 
         if m3u8_list:
@@ -628,11 +755,15 @@ def capture_channel_m3u8(
                 "referer": page_url
             }
 
-        time.sleep(0.8)
+        time.sleep(
+            0.8
+        )
 
     print(
-        f"❌ 【逾時】{channel_name} "
-        f"超過 {max_timeout} 秒未取得 .m3u8"
+        f"❌ 【逾時】"
+        f"{channel_name} "
+        f"超過 {max_timeout} 秒"
+        f"未取得 .m3u8"
     )
 
     save_debug(
@@ -711,6 +842,7 @@ def run_fully_auto_sports_scraper():
                 version_main=chrome_version,
                 use_subprocess=True
             )
+
         else:
             driver = uc.Chrome(
                 options=options,
@@ -749,7 +881,7 @@ def run_fully_auto_sports_scraper():
                 "https://livetvmax.com/channels/dazn1/",
 
             "DAZN 2":
-                "https://livetvmax.com/channels/dazn2/",
+                "https://livetvmax.com/channels/dazn2/"
         }
 
         captured_m3u8 = {}
@@ -762,18 +894,14 @@ def run_fully_auto_sports_scraper():
         )
 
         print()
-        print(
-            "=" * 60
-        )
+        print("=" * 60)
 
         print(
             "【體育台 5 頻道 - "
             "GitHub Windows 測試版】"
         )
 
-        print(
-            "=" * 60
-        )
+        print("=" * 60)
 
         for name, url in (
             sports_channels.items()
@@ -796,7 +924,7 @@ def run_fully_auto_sports_scraper():
             if not result:
                 print(
                     f"⚠️ {name} "
-                    f"進行第二次重試..."
+                    "進行第二次重試..."
                 )
 
                 result = (
@@ -813,23 +941,23 @@ def run_fully_auto_sports_scraper():
                     result
                 )
 
-            time.sleep(2)
+            time.sleep(
+                2
+            )
 
         print()
-        print(
-            "=" * 60
-        )
+        print("=" * 60)
 
         print(
             "【全自動抓取結果】"
         )
 
-        print(
-            "=" * 60
-        )
+        print("=" * 60)
 
         if captured_m3u8:
-            m3u_content = "#EXTM3U\n"
+            m3u_content = (
+                "#EXTM3U\n"
+            )
 
             for (
                 ch_name,
@@ -876,7 +1004,7 @@ def run_fully_auto_sports_scraper():
                 f"🎉 成功取得 "
                 f"{len(captured_m3u8)}/"
                 f"{len(sports_channels)} "
-                f"個頻道"
+                "個頻道"
             )
 
             print(
