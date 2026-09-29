@@ -2,9 +2,9 @@ name: Auto Fetch Sports M3U8
 
 on:
   schedule:
-    # 每 6 小時自動執行一次 (CRON 格式，UTC 時間)
+    # 每 6 小時自動執行一次 (UTC 時間)
     - cron: '0 */6 * * *'
-  workflow_dispatch: # 支援在 GitHub 網頁上手動點擊按鈕觸發執行
+  workflow_dispatch: # 允許在網頁上點擊按鈕手動觸發
 
 jobs:
   scrape-and-update:
@@ -15,11 +15,11 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/python-cv@v5
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
-      - name: Install Google Chrome & Dependencies
+      - name: Install Google Chrome & Xvfb
         run: |
           sudo apt-get update
           sudo apt-get install -y wget xvfb libxi6 libgconf-2-4
