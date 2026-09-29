@@ -2,12 +2,12 @@ name: Auto Fetch Sports M3U8
 
 on:
   schedule:
-    - cron: '0 */6 * * *'
-  workflow_dispatch:
+    - cron: '0 */6 * * *'  # 每 6 小時自動執行一次
+  workflow_dispatch:        # 支援手動觸發
 
 jobs:
   scrape-and-update:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
@@ -18,110 +18,22 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Set UTF-8 Encoding
-        shell: powershell
-        run: |
-          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-          $env:PYTHONIOENCODING = "utf-8"
-          "PYTHONIOENCODING=utf-8" >> $env:GITHUB_ENV
-
-      - name: Check Chrome
-        shell: powershell
-        run: |
-          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-
-          Write-Host "=============================================="
-          Write-Host "Chrome Environment Check"
-          Write-Host "=============================================="
-
-          $paths = @(
-            "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
-            "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
-            "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe"
-          )
-
-          $found = $false
-
-          foreach ($path in $paths) {
-            if (Test-Path $path) {
-              $version = (
-                Get-Item $path
-              ).VersionInfo.ProductVersion
-
-              Write-Host "Chrome Path: $path"
-              Write-Host "Chrome Version: $version"
-
-              $found = $true
-              break
-            }
-          }
-
-          if (-not $found) {
-            Write-Host "Chrome executable not found"
-            exit 1
-          }
-
       - name: Install Dependencies
-        shell: powershell
         run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb
           python -m pip install --upgrade pip
           pip install selenium undetected-chromedriver
 
-      - name: Check Public IP
-        shell: powershell
+      - name: Run Scraper inside Xvfb
         run: |
-          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-
-          Write-Host "=============================================="
-          Write-Host "Public IP"
-          Write-Host "=============================================="
-
-          try {
-            $ip = Invoke-RestMethod `
-              -Uri "https://api.ipify.org" `
-              -TimeoutSec 10
-
-            Write-Host "Public IPv4: $ip"
-          }
-          catch {
-            Write-Host "Unable to obtain public IP"
-          }
-
-      - name: Run Scraper
-        shell: powershell
-        env:
-          PYTHONIOENCODING: utf-8
-        run: |
-          [Console]::OutputEncoding = [System.Text.Encoding]::UTF8
-          $OutputEncoding = [System.Text.Encoding]::UTF8
-          python -X utf8 -u scraper.py
-
-      - name: Upload Debug Files
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: scraper-debug
-          path: |
-            debug_*.png
-            debug_*.html
-            sports_channels.m3u
-          if-no-files-found: warn
-          retention-days: 3
+          xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" python -u scraper.py
 
       - name: Commit and Push Updated M3U
-        shell: powershell
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-
-          if (Test-Path "sports_channels.m3u") {
-
+          if [ -f "sports_channels.m3u" ]; then
             git add sports_channels.m3u
-
-            $status = git status --porcelain
-
-            if ($status) {
-              git commit -m "Auto update sports_channels.m3u [skip ci]"
-              git push
-            }
-          }
+            git diff --quiet && git diff --staged --quiet || (git commit -m "Auto update sports_channels.m3u [skip ci]" && git push)
+          fi
