@@ -1,11 +1,11 @@
 #EXTM3U
 #EXTINF:-1 tvg-id="videoland_sports" tvg-name="緯來體育台",緯來體育台
-https://edge.886456.xyz/live/videoland-sports.m3u8?expires=1790701882&token=9134f4cf5f981d80a6158bb2e633db184103aeeeb192a6e404f878a611dde393&vid=videoland_sports
+https://edge.886456.xyz/live/videoland-sports.m3u8?expires=1790702648&token=9b3a2c2ae1254cc1ce7438c67009726d319c5ff9244e8b1cb10787bb589e59a6&vid=videoland_sports
 #EXTINF:-1 tvg-id="elta1" tvg-name="ELTA體育1台",ELTA體育1台
-https://edge.yeslivetv.cc/live/elta1.m3u8?expires=1790701891&token=108b70d0221e3b436f4425cb2612096b90f938a2b73fc94ffb3c30b8fff3d327&vid=elta1
+https://edge.yeslivetv.cc/live/elta1.m3u8?expires=1790702660&token=f32d39945f8ff33f4a5f88b3e2750ffbde17b6805059afeb1cafc7252e87529c&vid=elta1
 #EXTINF:-1 tvg-id="elta2" tvg-name="ELTA體育2台",ELTA體育2台
-https://edge.119903.xyz/live/elta2.m3u8?expires=1790701901&token=3bf1801591c2a04d00ca1fa72ba201393ace628a4ad31622a0600ad7dba6cc08&vid=elta2
+https://edge.119903.xyz/live/elta2.m3u8?expires=1790702673&token=4b4fd560905d0ca4ea7ad0e85db8d92b748943b8657a849511a35b5f7be65632&vid=elta2
 #EXTINF:-1 tvg-id="eleven1" tvg-name="DAZN 1",DAZN 1
-https://edge.404406.xyz/live/eleven1.m3u8?expires=1790701910&token=b1dca039c458907a8d027e77c9fe90dcbfbdc3398b7923ec17af133bd6b1aa0f&vid=eleven1
+https://edge.404406.xyz/live/eleven1.m3u8?expires=1790702681&token=bf7c331de05b46c8d72e7b6b11ec3e85b411dc29d298c2a845ef3e873eca30aa&vid=eleven1
 #EXTINF:-1 tvg-id="eleven2" tvg-name="DAZN 2",DAZN 2
-https://edge.404406.xyz/live/eleven2.m3u8?expires=1790701918&token=6f1ec760301c8fa661e23140a224ccdf40c5047a2ca3ad45a1109194d863b2d6&vid=eleven2
+https://edge.404406.xyz/live/eleven2.m3u8?expires=1790702691&token=b12f03d7f93d147925c6098cc839a361b8a3fe2feb5b8801981e7605252ed1a7&vid=eleven2
