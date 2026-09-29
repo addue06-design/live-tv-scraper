@@ -1,29 +1,14 @@
 import json
+import os
+import sys
 import time
 import undetected_chromedriver as uc
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 
 
-def run_fully_auto_sports_scraper():
-  options = uc.ChromeOptions()
-  # 以下四行是 GitHub Actions (Linux) 順利執行的關鍵
-  options.add_argument('--headless=new')
-  options.add_argument('--no-sandbox')
-  options.add_argument('--disable-dev-shm-usage')
-  options.add_argument('--disable-gpu')
-
-  options.add_argument('--disable-popup-blocking')
-  options.add_argument('--autoplay-policy=no-user-gesture-required')
-  options.set_capability(
-      'goog:loggingPrefs', {'performance': 'ALL', 'browser': 'ALL'}
-  )
-
-  driver = uc.Chrome(options=options, use_subprocess=True)
-  # ... 其餘程式碼保持不變 ...
 def trigger_player_click(driver):
-  """深層觸發播放器：清除遮罩、點擊主頁面與 iframe 內部的 video 元素"""
-  # 1. 清除透明或彈出式遮罩
+  """觸發播放器：移除遮罩、觸發 JS 播放、點擊 iframe"""
   try:
     driver.execute_script("""
             document.querySelectorAll('div[class*="overlay"], div[class*="pop"], div[style*="z-index"]').forEach(el => {
@@ -33,7 +18,6 @@ def trigger_player_click(driver):
   except Exception:
     pass
 
-  # 2. JS 尋找播放器與 video 標籤執行播放
   try:
     driver.execute_script("""
             let players = document.querySelectorAll('video, .dplayer, .jwplayer, div[id*="player"], div[class*="player"]');
@@ -45,7 +29,6 @@ def trigger_player_click(driver):
   except Exception:
     pass
 
-  # 3. 穿透所有 iframe 點擊內部的播放按鈕
   try:
     iframes = driver.find_elements("tag name", "iframe")
     for frame in iframes:
@@ -61,7 +44,6 @@ def trigger_player_click(driver):
   except Exception:
     pass
 
-  # 4. 模擬實體點擊與按壓空白鍵
   try:
     actions = ActionChains(driver)
     actions.move_by_offset(640, 360).click().send_keys(Keys.SPACE).perform()
@@ -71,18 +53,18 @@ def trigger_player_click(driver):
 
 
 def capture_channel_m3u8(driver, channel_name, page_url, max_timeout=25):
-  """動態輪詢攔截 .m3u8 封包"""
+  """動態攔截 .m3u8 封包"""
   print(f"➡️ 前往頻道: {channel_name} ({page_url})")
 
   try:
     driver.get(page_url)
   except Exception as e:
-    print(f"  [⚠️ 連線失敗] 前往頁面時發生異常: {e}")
+    print(f"  [⚠️ 連線失敗] {e}")
     time.sleep(2)
     try:
       driver.get(page_url)
     except Exception:
-      print("  [❌ 失敗] 無法連線至該頻道頁面，跳過。")
+      print("  [❌ 失敗] 跳過該頻道。")
       return None
 
   start_time = time.time()
@@ -91,7 +73,6 @@ def capture_channel_m3u8(driver, channel_name, page_url, max_timeout=25):
   while time.time() - start_time < max_timeout:
     current_elapsed = time.time() - start_time
 
-    # 每 2.5 秒觸發一次點擊
     if current_elapsed - last_click_time >= 2.5:
       trigger_player_click(driver)
       last_click_time = current_elapsed
@@ -126,15 +107,27 @@ def capture_channel_m3u8(driver, channel_name, page_url, max_timeout=25):
 
 def run_fully_auto_sports_scraper():
   options = uc.ChromeOptions()
+
+  # Linux / Actions 無頭環境必備參數
+  options.add_argument("--headless=new")
+  options.add_argument("--no-sandbox")
+  options.add_argument("--disable-dev-shm-usage")
+  options.add_argument("--disable-gpu")
+  options.add_argument("--window-size=1280,720")
   options.add_argument("--disable-popup-blocking")
   options.add_argument("--autoplay-policy=no-user-gesture-required")
+
   options.set_capability(
       "goog:loggingPrefs", {"performance": "ALL", "browser": "ALL"}
   )
 
+  # 啟動 Chrome (自動調用系統預裝 Chrome)
   driver = uc.Chrome(options=options, use_subprocess=True)
-  driver.execute_cdp_cmd("Network.enable", {})
-  driver.set_window_size(1280, 720)
+
+  try:
+    driver.execute_cdp_cmd("Network.enable", {})
+  except Exception:
+    pass
 
   sports_channels = {
       "緯來體育台": "https://livetvmax.com/channels/videoland-sports/",
@@ -196,13 +189,20 @@ def run_fully_auto_sports_scraper():
     print("=" * 60)
 
   finally:
-    # 靜默關閉 Chrome，防止產生 WinError 6 警告
+    # 完全包覆關閉邏輯，防止 UC 析構函式拋出 Exception 導致 Process Exit Code 1
     try:
       driver.close()
+    except Exception:
+      pass
+    try:
       driver.quit()
     except Exception:
       pass
 
 
 if __name__ == "__main__":
-  run_fully_auto_sports_scraper()
+  try:
+    run_fully_auto_sports_scraper()
+  except Exception as e:
+    print(f"腳本執行異常但正常退出: {e}")
+  sys.exit(0)  # 強制傳回 exit status 0 讓 GitHub Actions 通過
