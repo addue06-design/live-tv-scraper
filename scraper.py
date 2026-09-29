@@ -8,7 +8,7 @@ from selenium.webdriver.common.keys import Keys
 
 
 def trigger_player_click(driver):
-  """觸發播放器：移除遮罩、觸發 JS 播放、點擊 iframe"""
+  """觸發播放器：嘗試點擊播放按鈕與 iframe"""
   try:
     driver.execute_script("""
             document.querySelectorAll('div[class*="overlay"], div[class*="pop"], div[style*="z-index"]').forEach(el => {
@@ -44,28 +44,18 @@ def trigger_player_click(driver):
   except Exception:
     pass
 
-  try:
-    actions = ActionChains(driver)
-    actions.move_by_offset(640, 360).click().send_keys(Keys.SPACE).perform()
-    actions.reset_actions()
-  except Exception:
-    pass
 
-
-def capture_channel_m3u8(driver, channel_name, page_url, max_timeout=25):
-  """動態攔截 .m3u8 封包"""
+def capture_channel_m3u8(driver, channel_name, page_url, max_timeout=30):
   print(f"➡️ 前往頻道: {channel_name} ({page_url})")
 
   try:
     driver.get(page_url)
+    time.sleep(3)
+    title = driver.title
+    print(f"  [📄 網頁標題] {title}")
   except Exception as e:
     print(f"  [⚠️ 連線失敗] {e}")
-    time.sleep(2)
-    try:
-      driver.get(page_url)
-    except Exception:
-      print("  [❌ 失敗] 跳過該頻道。")
-      return None
+    return None
 
   start_time = time.time()
   last_click_time = 0
@@ -73,7 +63,7 @@ def capture_channel_m3u8(driver, channel_name, page_url, max_timeout=25):
   while time.time() - start_time < max_timeout:
     current_elapsed = time.time() - start_time
 
-    if current_elapsed - last_click_time >= 2.5:
+    if current_elapsed - last_click_time >= 3.0:
       trigger_player_click(driver)
       last_click_time = current_elapsed
 
@@ -84,13 +74,10 @@ def capture_channel_m3u8(driver, channel_name, page_url, max_timeout=25):
         if log_data["method"] == "Network.responseReceived":
           res_url = log_data["params"]["response"]["url"]
 
-          if ".m3u8" in res_url and any(
-              kw in res_url.lower()
-              for kw in ["api", "live", "stream", "yeslivetv"]
-          ):
+          if ".m3u8" in res_url and not res_url.endswith(".png"):
             print(
-                f"  [🎯 動態獲取成功] 用時 {round(current_elapsed, 1)} 秒 ->"
-                f" {res_url[:65]}..."
+                f"  [🎯 成功抓到 .m3u8] ({round(current_elapsed, 1)}s) ->"
+                f" {res_url}"
             )
             return {
                 "url": res_url,
@@ -101,27 +88,28 @@ def capture_channel_m3u8(driver, channel_name, page_url, max_timeout=25):
 
     time.sleep(0.8)
 
-  print(f"  [❌ 逾時終止] 超過 {max_timeout} 秒未偵測到 .m3u8 封包。")
+  print(f"  [❌ 逾時] 未能抓到 {channel_name} 的 .m3u8")
   return None
 
 
 def run_fully_auto_sports_scraper():
   options = uc.ChromeOptions()
 
-  # Linux / Actions 無頭環境必備參數
+  # Actions 無頭環境優化參數
   options.add_argument("--headless=new")
   options.add_argument("--no-sandbox")
   options.add_argument("--disable-dev-shm-usage")
   options.add_argument("--disable-gpu")
-  options.add_argument("--window-size=1280,720")
-  options.add_argument("--disable-popup-blocking")
-  options.add_argument("--autoplay-policy=no-user-gesture-required")
+  options.add_argument(
+      "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+      " AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0"
+      " Safari/537.36"
+  )
 
   options.set_capability(
       "goog:loggingPrefs", {"performance": "ALL", "browser": "ALL"}
   )
 
-  # 啟動 Chrome (自動調用系統預裝 Chrome)
   driver = uc.Chrome(options=options, use_subprocess=True)
 
   try:
@@ -144,56 +132,30 @@ def run_fully_auto_sports_scraper():
   )
 
   try:
-    print("\n" + "=" * 60)
-    print("【體育台 5 頻道 - 全自動巡航與動態回應偵測抓取】")
-    print("=" * 60 + "\n")
-
     for name, url in sports_channels.items():
-      timeout_limit = 35 if name == "緯來體育台" else 22
-
-      result = capture_channel_m3u8(
-          driver, name, url, max_timeout=timeout_limit
-      )
-
-      if not result:
-        print(f"  ⚠️ {name} 進行二次重試...")
-        result = capture_channel_m3u8(driver, name, url, max_timeout=15)
-
+      result = capture_channel_m3u8(driver, name, url, max_timeout=30)
       if result:
         captured_m3u8[name] = result
-
       time.sleep(2)
 
-    # 輸出 M3U 清單
-    print("\n" + "=" * 60)
-    print("【全自動抓取結果彙整】")
     if captured_m3u8:
       m3u_content = "#EXTM3U\n"
       for ch_name, data in captured_m3u8.items():
-        print(f"🎯 {ch_name} -> {data['url']}")
         m3u_content += f"#EXTINF:-1,{ch_name}\n"
         m3u_content += f"#EXTVLCOPT:http-referrer={data['referer']}\n"
         m3u_content += f"#EXTVLCOPT:http-user-agent={user_agent}\n"
         m3u_content += f"{data['url']}\n"
 
-      filename = "sports_channels.m3u"
-      with open(filename, "w", encoding="utf-8") as f:
+      with open("sports_channels.m3u", "w", encoding="utf-8") as f:
         f.write(m3u_content)
-
       print(
-          f"\n🎉 成功匯出 {len(captured_m3u8)}/{len(sports_channels)} 個頻道至"
-          f" {filename}"
+          f"\n🎉 成功覆寫 sports_channels.m3u，共包含"
+          f" {len(captured_m3u8)} 個頻道。"
       )
     else:
-      print("❌ 未能抓取到任何頻道的 .m3u8 網址。")
-    print("=" * 60)
+      print("\n⚠️ 依然未抓到任何頻道，維持原有檔案。")
 
   finally:
-    # 完全包覆關閉邏輯，防止 UC 析構函式拋出 Exception 導致 Process Exit Code 1
-    try:
-      driver.close()
-    except Exception:
-      pass
     try:
       driver.quit()
     except Exception:
@@ -201,8 +163,4 @@ def run_fully_auto_sports_scraper():
 
 
 if __name__ == "__main__":
-  try:
-    run_fully_auto_sports_scraper()
-  except Exception as e:
-    print(f"腳本執行異常但正常退出: {e}")
-  sys.exit(0)  # 強制傳回 exit status 0 讓 GitHub Actions 通過
+  run_fully_auto_sports_scraper()
