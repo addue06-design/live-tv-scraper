@@ -1,9 +1,7 @@
 name: Auto Fetch Sports M3U8
 
 on:
-  schedule:
-    - cron: '0 */6 * * *'  # 每 6 小時自動執行一次
-  workflow_dispatch:        # 支援手動觸發
+  workflow_dispatch:
 
 jobs:
   scrape-and-update:
@@ -11,29 +9,75 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
-      - name: Install Dependencies
+      - name: Check Environment
+        shell: cmd
         run: |
-          sudo apt-get update
-          sudo apt-get install -y xvfb
+          echo ==============================================
+          echo SELF-HOSTED WINDOWS RUNNER
+          echo ==============================================
+          echo.
+          echo Computer:
+          echo %COMPUTERNAME%
+          echo.
+          echo User:
+          echo %USERNAME%
+          echo.
+          echo Python:
+          python --version
+          echo.
+          echo Chrome:
+          if exist "%ProgramFiles%\Google\Chrome\Application\chrome.exe" (
+            "%ProgramFiles%\Google\Chrome\Application\chrome.exe" --version
+          ) else if exist "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" (
+            "%ProgramFiles(x86)%\Google\Chrome\Application\chrome.exe" --version
+          ) else if exist "%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe" (
+            "%LOCALAPPDATA%\Google\Chrome\Application\chrome.exe" --version
+          ) else (
+            echo Chrome executable not found
+          )
+
+      - name: Install Dependencies
+        shell: cmd
+        run: |
           python -m pip install --upgrade pip
           pip install selenium undetected-chromedriver
 
-      - name: Run Scraper inside Xvfb
+      - name: Run Scraper
+        shell: cmd
+        env:
+          PYTHONIOENCODING: utf-8
         run: |
-          xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" python -u scraper.py
+          python -X utf8 -u scraper.py
+
+      - name: Upload Debug Files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scraper-debug
+          path: |
+            debug_*.png
+            debug_*.html
+            sports_channels.m3u
+          if-no-files-found: warn
+          retention-days: 3
 
       - name: Commit and Push Updated M3U
+        shell: cmd
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          if [ -f "sports_channels.m3u" ]; then
+          if exist sports_channels.m3u (
             git add sports_channels.m3u
-            git diff --quiet && git diff --staged --quiet || (git commit -m "Auto update sports_channels.m3u [skip ci]" && git push)
-          fi
+            git diff --quiet
+            if errorlevel 1 (
+              git commit -m "Auto update sports_channels.m3u [skip ci]"
+              git push
+            )
+          )
