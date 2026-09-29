@@ -5,6 +5,22 @@ from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.keys import Keys
 
 
+def run_fully_auto_sports_scraper():
+  options = uc.ChromeOptions()
+  # 以下四行是 GitHub Actions (Linux) 順利執行的關鍵
+  options.add_argument('--headless=new')
+  options.add_argument('--no-sandbox')
+  options.add_argument('--disable-dev-shm-usage')
+  options.add_argument('--disable-gpu')
+
+  options.add_argument('--disable-popup-blocking')
+  options.add_argument('--autoplay-policy=no-user-gesture-required')
+  options.set_capability(
+      'goog:loggingPrefs', {'performance': 'ALL', 'browser': 'ALL'}
+  )
+
+  driver = uc.Chrome(options=options, use_subprocess=True)
+  # ... 其餘程式碼保持不變 ...
 def trigger_player_click(driver):
   """深層觸發播放器：清除遮罩、點擊主頁面與 iframe 內部的 video 元素"""
   # 1. 清除透明或彈出式遮罩
