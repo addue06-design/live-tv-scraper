@@ -18,6 +18,14 @@ jobs:
         with:
           python-version: '3.11'
 
+      # -------------------------------------------------------------
+      # 關鍵修復：啟用 Cloudflare WARP 切換出口 IP，繞過 5 秒盾封鎖
+      # -------------------------------------------------------------
+      - name: Setup Cloudflare WARP
+        uses: fscarmen/warp-on-actions@v1
+        with:
+          mode: global
+
       - name: Install Dependencies
         run: |
           sudo apt-get update && sudo apt-get install -y xvfb
@@ -26,17 +34,13 @@ jobs:
 
       - name: Run Scraper inside Xvfb
         run: |
-          xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" python scraper.py
+          xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" python -u scraper.py
 
       - name: Commit and Push Updated M3U
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # 檢查檔案是否存在，存在才進行 git add 與 commit
           if [ -f "sports_channels.m3u" ]; then
             git add sports_channels.m3u
             git diff --quiet && git diff --staged --quiet || (git commit -m "Auto update sports_channels.m3u [skip ci]" && git push)
-          else
-            echo "⚠️ 本次未成功生成 sports_channels.m3u，跳過 Commit。"
           fi
