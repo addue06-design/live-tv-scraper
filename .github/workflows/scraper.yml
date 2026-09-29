@@ -19,28 +19,72 @@ jobs:
           python-version: '3.11'
 
       # -------------------------------------------------------------
-      # 修正版本號：將 v1 改為 v1.2
+      # 啟用 Cloudflare WARP
       # -------------------------------------------------------------
       - name: Setup Cloudflare WARP
         uses: fscarmen/warp-on-actions@v1.2
         with:
           mode: global
 
+      # -------------------------------------------------------------
+      # 顯示目前對外 IP，方便診斷 Cloudflare Challenge
+      # -------------------------------------------------------------
+      - name: Check Public IP
+        run: |
+          echo "🌐 IPv4:"
+          curl -4 -s https://api.ipify.org
+          echo
+          echo "🌐 IPv6:"
+          curl -6 -s https://api6.ipify.org || true
+          echo
+
+      # -------------------------------------------------------------
+      # 安裝環境
+      # -------------------------------------------------------------
       - name: Install Dependencies
         run: |
-          sudo apt-get update && sudo apt-get install -y xvfb
+          sudo apt-get update
+          sudo apt-get install -y xvfb
           python -m pip install --upgrade pip
           pip install selenium undetected-chromedriver
 
+      # -------------------------------------------------------------
+      # 執行 Scraper
+      # -------------------------------------------------------------
       - name: Run Scraper inside Xvfb
         run: |
           xvfb-run --auto-servernum --server-args="-screen 0 1280x720x24" python -u scraper.py
 
+      # -------------------------------------------------------------
+      # 上傳 Debug 檔案
+      #
+      # 即使 Scraper 失敗也會執行
+      # -------------------------------------------------------------
+      - name: Upload Debug Files
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scraper-debug
+          path: |
+            debug_*.png
+            debug_*.html
+            sports_channels.m3u
+          if-no-files-found: warn
+          retention-days: 3
+
+      # -------------------------------------------------------------
+      # Commit / Push M3U
+      # -------------------------------------------------------------
       - name: Commit and Push Updated M3U
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
           if [ -f "sports_channels.m3u" ]; then
             git add sports_channels.m3u
-            git diff --quiet && git diff --staged --quiet || (git commit -m "Auto update sports_channels.m3u [skip ci]" && git push)
+
+            git diff --quiet && git diff --staged --quiet || (
+              git commit -m "Auto update sports_channels.m3u [skip ci]" &&
+              git push
+            )
           fi
