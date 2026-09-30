@@ -1,3 +1,3 @@
 #EXTM3U
-#EXTINF:-1 tvg-id="eleven2" group-title="體育" http-user-agent="Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/605.1.15" http-referrer="https://livetvmax.com/",Eleven Sports 2
+#EXTINF:-1 tvg-id="eleven2" group-title="體育",Eleven Sports 2
 https://edge.404406.xyz/live/eleven2.m3u8?expires=1790751822&token=b8c863273f85725a998d0aab51759b0ed5fe70ae17a6cb06e73a2c75d252206c&vid=eleven2
