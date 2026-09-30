@@ -1,3 +1,5 @@
 #EXTM3U
-#EXTINF:-1,DAZN 2
-https://edge.404406.xyz/live/eleven2.m3u8?expires=1790703722&token=db95ec6d6279be9a7c071a4bdb9d8c4d8ef90b4bbf78655251553872803f2320&vid=eleven2
+#EXTINF:-1 tvg-id="Eleven2" group-title="體育",Eleven Sports 2
+#EXTVLCOPT:http-referrer=https://livetvmax.com/channels/dazn2/
+#EXTVLCOPT:http-user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36
+https://edge.404406.xyz/live/eleven2.m3u8?expires=1790751822&token=b8c863273f85725a998d0aab51759b0ed5fe70ae17a6cb06e73a2c75d252206c&vid=eleven2|Referer=https://livetvmax.com/channels/dazn2/&User-Agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36
